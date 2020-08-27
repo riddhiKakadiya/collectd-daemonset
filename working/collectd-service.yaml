@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    k8s-app: collectd-exporter
+  name: collectd-exporter
+  namespace: monitoring
+  annotations: 
+    prometheus.io/port: 9103
+    prometheus.io/scrape: true
+spec:
+  # type: ClusterIP
+  # ClusterIP: None
+  ports:
+  - name: collectd-tcp
+    protocol: TCP
+    port: 9103 #metrics
+    targetPort: 9103 #http 
+  - name: collectd-udp
+    protocol: UDP
+    port: 25826 
+    targetPort: 25826  
+  # externalIPs:
+  # - 192.168.56.101
+  selector:
+    k8s-app: collectd-exporter
+  sessionAffinity: ClientIP

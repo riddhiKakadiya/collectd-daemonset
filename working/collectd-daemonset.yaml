@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    k8s-app: collectd-exporter
+  name: collectd-exporter
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      k8s-app: collectd-exporter
+  template:
+    metadata:
+      labels:
+        k8s-app: collectd-exporter
+    spec:
+      serviceAccountName: collectd
+      containers:
+      # command: ['sh', '-c', 'apt-get install', 'collectd']
+      - args:
+        - --collectd.listen-address=127.0.0.1:25826  # n/w address that accepts collectd binary n/w pkts
+        - --web.listen-address=127.0.0.1:9103  # address to expose metrics & web interface
+        - --collectd.security-level=None  # to accept pkts; None,Sign,Encrypt
+        # - --web.telemetry-path=/metrics # path to expose prometheus metrics
+        - --web.collectd-push-path=/collectd-post
+        - --log.level=info
+        - --log.format=logfmt
+        image: prom/collectd-exporter
+        name: collectd-exporter
+        # command: ['sh', '-c', 'collectd_exporter', '--collectd.listen-address=":25826"']
+        ports:
+        # - "127.0.0.1:25826:25826"
+        # - "127.0.0.1:9103:9103"
+        - containerPort: 25826
+          # hostPort: 25826
+          # name: collectd-udp
+          # protocol: UDP 
+        - containerPort: 9103    
+          # hostPort: 9103  
+          # name: collectd-tcp
+          # protocol: TCP 
+        resources:
+          limits:
+            cpu: 250m
+            memory: 180Mi
+          requests:
+            cpu: 102m
+            memory: 180Mi
+        # command: ['/bin/sh', '-c', 'cat /etc/config/node-collectd.conf']    
+        volumeMounts:
+        - mountPath: /etc/collectd #/collectd/etc/collectd-config 
+          name: collectd
+        # - mountPath: /mnt/proc
+        #   name: proc
+        #   readOnly: false
+        # - mountPath: /host/root  
+          # mountPropagation: HostToContainer
+          # name: root
+          # readOnly: true
+        # - mountPath: mnt/etc
+        #   name: etc
+        #   readOnly: true 
+        # - mountPath: /host/sys  
+        #   name: sys
+        #   readOnly: false                    
+      hostNetwork: true
+      hostPID: true
+      nodeSelector:
+        kubernetes.io/os: linux
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+      tolerations:
+      - operator: Exists
+      volumes:
+      - name: collectd
+        configMap:
+          name: collectd 
+      # - name: collectd-volume
+      #   configMap:
+      #     name: collectd-config  
+ 
+      # - hostPath:
+      #     path: /proc
+      #   name: proc
+      # - hostPath:
+      #     path: /etc
+      #   name: etc
+      # - hostPath:
+      #     path: /sys
+      #   name: sys
+      # - hostPath:
+      #     path: /
+      #   name: root     
+
+
